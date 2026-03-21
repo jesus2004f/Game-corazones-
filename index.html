@@ -38,7 +38,6 @@ button {
 #gameCanvas {
   display: none;
 }
-
 </style>
 </head>
 
@@ -64,9 +63,9 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let player = {
-  x: canvas.width / 2,
-  y: canvas.height - 50,
-  width: 100,
+  x: canvas.width / 2 - 50,
+  y: canvas.height - 60,
+  width: 120,
   height: 20
 };
 
@@ -84,8 +83,8 @@ function createHeart() {
   hearts.push({
     x: Math.random() * canvas.width,
     y: 0,
-    size: 20,
-    speed: 3 + Math.random() * 3
+    size: 15 + Math.random() * 10,
+    speed: 2 + Math.random() * 1.5
   });
 }
 
@@ -94,17 +93,29 @@ function drawPlayer() {
   ctx.fillRect(player.x, player.y, player.width, player.height);
 }
 
+// 💖 CORAZONES REALES
 function drawHearts() {
-  ctx.fillStyle = "red";
   hearts.forEach(h => {
+    ctx.fillStyle = "red";
     ctx.beginPath();
-    ctx.arc(h.x, h.y, h.size, 0, Math.PI * 2);
+    ctx.moveTo(h.x, h.y);
+
+    ctx.bezierCurveTo(h.x - h.size, h.y - h.size,
+                      h.x - h.size * 2, h.y + h.size / 2,
+                      h.x, h.y + h.size * 2);
+
+    ctx.bezierCurveTo(h.x + h.size * 2, h.y + h.size / 2,
+                      h.x + h.size, h.y - h.size,
+                      h.x, h.y);
+
     ctx.fill();
   });
 }
 
+// 🔥 MEJORADO (sin errores)
 function updateHearts() {
-  hearts.forEach((h, index) => {
+  for (let i = hearts.length - 1; i >= 0; i--) {
+    let h = hearts[i];
     h.y += h.speed;
 
     if (
@@ -113,14 +124,12 @@ function updateHearts() {
       h.x < player.x + player.width
     ) {
       score++;
-      hearts.splice(index, 1);
-    }
-
-    if (h.y > canvas.height) {
+      hearts.splice(i, 1);
+    } else if (h.y > canvas.height) {
       misses++;
-      hearts.splice(index, 1);
+      hearts.splice(i, 1);
     }
-  });
+  }
 }
 
 function drawText() {
@@ -141,19 +150,21 @@ function gameLoop() {
   if (misses < 5) {
     requestAnimationFrame(gameLoop);
   } else {
-    alert("Game Over 💔 Puntos: " + score);
+    alert("💔 Game Over\nPuntos: " + score);
     location.reload();
   }
 }
 
-setInterval(createHeart, 800);
+// ⏱️ MENOS CORAZONES (más fácil)
+setInterval(createHeart, 1400);
 
+// 📱 CONTROLES
 canvas.addEventListener("touchmove", e => {
-  player.x = e.touches[0].clientX - 50;
+  player.x = e.touches[0].clientX - player.width / 2;
 });
 
 canvas.addEventListener("mousemove", e => {
-  player.x = e.clientX - 50;
+  player.x = e.clientX - player.width / 2;
 });
 </script>
 
