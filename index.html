@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego de Corazones 💖</title>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial;
+  background: linear-gradient(#ff9a9e, #fad0c4);
+}
+
+#startScreen {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #000000cc;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  flex-direction: column;
+}
+
+button {
+  padding: 15px;
+  font-size: 18px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  background: pink;
+}
+
+#gameCanvas {
+  display: none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="startScreen">
+  <h1>💖 Atrapa los corazones 💖</h1>
+  <p>
+  Mueve la barra con tu dedo o mouse.<br>
+  Atrapa los corazones ❤️<br>
+  No dejes caer más de 5 😢
+  </p>
+  <button onclick="startGame()">Jugar</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  width: 100,
+  height: 20
+};
+
+let hearts = [];
+let score = 0;
+let misses = 0;
+
+function startGame() {
+  document.getElementById("startScreen").style.display = "none";
+  canvas.style.display = "block";
+  gameLoop();
+}
+
+function createHeart() {
+  hearts.push({
+    x: Math.random() * canvas.width,
+    y: 0,
+    size: 20,
+    speed: 3 + Math.random() * 3
+  });
+}
+
+function drawPlayer() {
+  ctx.fillStyle = "white";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+function drawHearts() {
+  ctx.fillStyle = "red";
+  hearts.forEach(h => {
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, h.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function updateHearts() {
+  hearts.forEach((h, index) => {
+    h.y += h.speed;
+
+    if (
+      h.y > player.y &&
+      h.x > player.x &&
+      h.x < player.x + player.width
+    ) {
+      score++;
+      hearts.splice(index, 1);
+    }
+
+    if (h.y > canvas.height) {
+      misses++;
+      hearts.splice(index, 1);
+    }
+  });
+}
+
+function drawText() {
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText("Puntos: " + score, 20, 30);
+  ctx.fillText("Fallos: " + misses, 20, 60);
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawPlayer();
+  drawHearts();
+  updateHearts();
+  drawText();
+
+  if (misses < 5) {
+    requestAnimationFrame(gameLoop);
+  } else {
+    alert("Game Over 💔 Puntos: " + score);
+    location.reload();
+  }
+}
+
+setInterval(createHeart, 800);
+
+canvas.addEventListener("touchmove", e => {
+  player.x = e.touches[0].clientX - 50;
+});
+
+canvas.addEventListener("mousemove", e => {
+  player.x = e.clientX - 50;
+});
+</script>
+
+</body>
+</html>
