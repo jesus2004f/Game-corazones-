@@ -3,45 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juego PRO 💖</title>
+<title>Juego 💖</title>
 
 <style>
-body {
+body{
   margin:0;
   overflow:hidden;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(#ff9a9e,#fad0c4);
+  font-family:sans-serif;
+  background:linear-gradient(#ff9a9e,#fad0c4);
 }
 
-/* INICIO */
-#startScreen, #gameOver {
+#startScreen,#gameOver{
   position:absolute;
   width:100%;
   height:100%;
   display:flex;
   justify-content:center;
   align-items:center;
-  background: rgba(0,0,0,0.6);
-  z-index:10;
+  background:rgba(0,0,0,0.6);
 }
 
 .card{
   background:white;
-  padding:30px;
+  padding:25px;
   border-radius:20px;
   text-align:center;
   width:80%;
-  max-width:350px;
+  max-width:320px;
 }
 
 button{
-  padding:15px;
+  padding:12px;
   border:none;
   border-radius:15px;
   background:#ff4d6d;
   color:white;
-  font-size:18px;
-  margin-top:15px;
+  font-size:16px;
+  margin-top:10px;
   width:100%;
 }
 
@@ -55,16 +53,6 @@ button{
   font-weight:bold;
 }
 
-#message{
-  position:absolute;
-  top:25%;
-  width:100%;
-  text-align:center;
-  font-size:24px;
-  color:white;
-  opacity:0;
-  transition:.5s;
-}
 canvas{display:none;}
 </style>
 </head>
@@ -73,27 +61,26 @@ canvas{display:none;}
 
 <div id="startScreen">
   <div class="card">
-    <h2>💖 Atrapa corazones</h2>
-    <p>Evita bombas 💣 y consigue récord</p>
+    <h2>Atrapa corazones</h2>
+    <p>Evita bombas 💣</p>
     <button onclick="startGame()">Jugar</button>
   </div>
 </div>
 
 <div id="gameOver" style="display:none;">
   <div class="card">
-    <h2>💔 Game Over</h2>
+    <h2>Game Over</h2>
     <p id="finalScore"></p>
     <button onclick="location.reload()">Reintentar</button>
   </div>
 </div>
 
 <div id="hud">
-  <div id="score">💖 0</div>
-  <div id="record">🏆 0</div>
+  <div id="score">0</div>
+  <div id="record">0</div>
   <div id="level">Nivel 1</div>
 </div>
 
-<div id="message"></div>
 <canvas id="gameCanvas"></canvas>
 
 <script>
@@ -103,22 +90,37 @@ const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
+// IMÁGENES
+const heartImg=new Image();
+heartImg.src="https://cdn-icons-png.flaticon.com/512/833/833472.png";
+
+const goldImg=new Image();
+goldImg.src="https://cdn-icons-png.flaticon.com/512/2583/2583344.png";
+
+const bombImg=new Image();
+bombImg.src="https://cdn-icons-png.flaticon.com/512/564/564619.png";
+
+// SONIDOS
+let catchSound,goldSound,bombSound;
+
+function initSounds(){
+  catchSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
+  goldSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+  bombSound=new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg");
+}
+
 let player={x:canvas.width/2,y:canvas.height-70,width:140,height:20};
-let items=[],particles=[];
+let items=[];
 let score=0;
 let record=localStorage.getItem("record")||0;
 let level=1;
 let spawnRate=1600;
 let misses=0;
 
-document.getElementById("record").innerText="🏆 "+record;
-
-/* SONIDOS */
-const catchSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
-const goldSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
-const bombSound=new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg");
+document.getElementById("record").innerText=record;
 
 function startGame(){
+  initSounds();
   document.getElementById("startScreen").style.display="none";
   canvas.style.display="block";
   spawnLoop();
@@ -134,49 +136,23 @@ function createItem(){
   items.push({
     x:Math.random()*canvas.width,
     y:-20,
-    size:18,
-    speed:2+level*0.6,
+    size:40,
+    speed:2+level*0.5,
     type
   });
 }
 
 function drawItem(i){
-  if(i.type==="heart") ctx.fillStyle="red";
-  else if(i.type==="gold") ctx.fillStyle="gold";
-  else ctx.fillStyle="black";
+  let img=heartImg;
+  if(i.type==="gold") img=goldImg;
+  if(i.type==="bomb") img=bombImg;
 
-  ctx.beginPath();
-  ctx.arc(i.x,i.y,i.size,0,Math.PI*2);
-  ctx.fill();
+  ctx.drawImage(img,i.x-20,i.y-20,40,40);
 }
 
 function drawPlayer(){
   ctx.fillStyle="#fff";
   ctx.fillRect(player.x-player.width/2,player.y,player.width,player.height);
-}
-
-/* PARTÍCULAS */
-function createParticles(x,y,color){
-  for(let i=0;i<10;i++){
-    particles.push({
-      x,y,
-      dx:(Math.random()-0.5)*4,
-      dy:(Math.random()-0.5)*4,
-      life:30,
-      color
-    });
-  }
-}
-
-function drawParticles(){
-  particles.forEach(p=>{
-    p.x+=p.dx;
-    p.y+=p.dy;
-    p.life--;
-    ctx.fillStyle=p.color;
-    ctx.fillRect(p.x,p.y,3,3);
-  });
-  particles=particles.filter(p=>p.life>0);
 }
 
 function updateItems(){
@@ -189,6 +165,7 @@ function updateItems(){
        it.x<player.x+player.width/2){
 
       if(it.type==="bomb"){
+        bombSound.currentTime=0;
         bombSound.play();
         endGame();
         return;
@@ -196,12 +173,12 @@ function updateItems(){
 
       if(it.type==="gold"){
         score+=3;
+        goldSound.currentTime=0;
         goldSound.play();
-        createParticles(it.x,it.y,"gold");
       }else{
         score++;
+        catchSound.currentTime=0;
         catchSound.play();
-        createParticles(it.x,it.y,"red");
       }
 
       updateLevel();
@@ -216,7 +193,7 @@ function updateItems(){
     }
   }
 
-  document.getElementById("score").innerText="💖 "+score;
+  document.getElementById("score").innerText=score;
 }
 
 function updateLevel(){
@@ -224,33 +201,20 @@ function updateLevel(){
   else if(score>=15) level=2;
 
   document.getElementById("level").innerText="Nivel "+level;
-  spawnRate=1600-level*350;
+  spawnRate=1600-level*300;
 }
 
 function updateRecord(){
   if(score>record){
     record=score;
     localStorage.setItem("record",record);
-    document.getElementById("record").innerText="🏆 "+record;
-    showMessage("Nuevo récord 🔥");
+    document.getElementById("record").innerText=record;
   }
-}
-
-function showMessage(text){
-  const msg=document.getElementById("message");
-  msg.innerText=text;
-  msg.style.opacity=1;
-  setTimeout(()=>msg.style.opacity=0,2000);
 }
 
 function spawnLoop(){
   createItem();
   setTimeout(spawnLoop,spawnRate);
-}
-
-function endGame(){
-  document.getElementById("gameOver").style.display="flex";
-  document.getElementById("finalScore").innerText="Puntos: "+score;
 }
 
 function gameLoop(){
@@ -259,13 +223,17 @@ function gameLoop(){
   drawPlayer();
   items.forEach(drawItem);
   updateItems();
-  drawParticles();
 
   if(misses<5){
     requestAnimationFrame(gameLoop);
   }else{
     endGame();
   }
+}
+
+function endGame(){
+  document.getElementById("gameOver").style.display="flex";
+  document.getElementById("finalScore").innerText="Puntos: "+score;
 }
 
 canvas.addEventListener("mousemove",e=>player.x=e.clientX);
