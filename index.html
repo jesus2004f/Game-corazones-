@@ -3,74 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💖 Para ti 💖</title>
+<title>Juego PRO 💖</title>
 
 <style>
 body {
-  margin: 0;
-  overflow: hidden;
+  margin:0;
+  overflow:hidden;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(180deg, #ff9a9e, #fad0c4);
+  background: linear-gradient(#ff9a9e,#fad0c4);
 }
 
-/* Pantalla inicio bonita */
-#startScreen {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #ff6f91, #ff9671);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* INICIO */
+#startScreen, #gameOver {
+  position:absolute;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background: rgba(0,0,0,0.6);
+  z-index:10;
 }
 
-.card {
-  background: white;
-  padding: 30px;
-  border-radius: 25px;
-  text-align: center;
-  width: 85%;
-  max-width: 350px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+.card{
+  background:white;
+  padding:30px;
+  border-radius:20px;
+  text-align:center;
+  width:80%;
+  max-width:350px;
 }
 
-h1 { color: #ff4d6d; }
-p { color: #555; }
-
-button {
-  padding: 15px;
-  border: none;
-  border-radius: 20px;
-  background: #ff4d6d;
-  color: white;
-  font-size: 18px;
-  margin-top: 15px;
-  width: 100%;
+button{
+  padding:15px;
+  border:none;
+  border-radius:15px;
+  background:#ff4d6d;
+  color:white;
+  font-size:18px;
+  margin-top:15px;
+  width:100%;
 }
 
-/* HUD */
-#hud {
-  position: absolute;
-  top: 10px;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  color: white;
-  font-weight: bold;
+#hud{
+  position:absolute;
+  top:10px;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  color:white;
+  font-weight:bold;
 }
 
-#message {
-  position: absolute;
-  top: 25%;
-  width: 100%;
-  text-align: center;
-  font-size: 24px;
-  color: white;
-  opacity: 0;
-  transition: 0.5s;
+#message{
+  position:absolute;
+  top:25%;
+  width:100%;
+  text-align:center;
+  font-size:24px;
+  color:white;
+  opacity:0;
+  transition:.5s;
 }
-
-canvas { display: none; }
+canvas{display:none;}
 </style>
 </head>
 
@@ -78,183 +73,203 @@ canvas { display: none; }
 
 <div id="startScreen">
   <div class="card">
-    <h1>💖 Para ti 💖</h1>
-    <p>
-    Atrapa los corazones ❤️<br>
-    No dejes caer más de 5 😢<br>
-    Disfrútalo 💕
-    </p>
-    <button onclick="startGame()">Jugar 💘</button>
+    <h2>💖 Atrapa corazones</h2>
+    <p>Evita bombas 💣 y consigue récord</p>
+    <button onclick="startGame()">Jugar</button>
+  </div>
+</div>
+
+<div id="gameOver" style="display:none;">
+  <div class="card">
+    <h2>💔 Game Over</h2>
+    <p id="finalScore"></p>
+    <button onclick="location.reload()">Reintentar</button>
   </div>
 </div>
 
 <div id="hud">
   <div id="score">💖 0</div>
   <div id="record">🏆 0</div>
+  <div id="level">Nivel 1</div>
 </div>
 
 <div id="message"></div>
 <canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
 
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+canvas.width=innerWidth;
+canvas.height=innerHeight;
 
-let player = {
-  x: canvas.width / 2,
-  y: canvas.height - 70,
-  width: 140,
-  height: 20
-};
+let player={x:canvas.width/2,y:canvas.height-70,width:140,height:20};
+let items=[],particles=[];
+let score=0;
+let record=localStorage.getItem("record")||0;
+let level=1;
+let spawnRate=1600;
+let misses=0;
 
-let hearts = [];
-let flowers = [];
-let score = 0;
-let record = 0;
-let misses = 0;
-let spawnRate = 1800; // MÁS LENTO
+document.getElementById("record").innerText="🏆 "+record;
 
-const messages = [
-  "💖 Eres muy especial",
-  "✨ Eres increíble",
-  "🌸 Sonríe hermosa",
-  "💞 Me encantas",
-  "🌷 Eres única"
-];
+/* SONIDOS */
+const catchSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
+const goldSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const bombSound=new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg");
 
-function startGame() {
-  document.getElementById("startScreen").style.display = "none";
-  canvas.style.display = "block";
+function startGame(){
+  document.getElementById("startScreen").style.display="none";
+  canvas.style.display="block";
   spawnLoop();
   gameLoop();
 }
 
-// GENERA CERCA DEL JUGADOR (CLAVE)
-function createHeart() {
-  let range = 150; // rango pequeño
-  let x = player.x + (Math.random() * range - range/2);
+function createItem(){
+  let r=Math.random();
+  let type="heart";
+  if(r>0.9) type="bomb";
+  else if(r>0.75) type="gold";
 
-  hearts.push({
-    x: Math.max(20, Math.min(canvas.width-20, x)),
-    y: -20,
-    size: 18,
-    speed: 2
+  items.push({
+    x:Math.random()*canvas.width,
+    y:-20,
+    size:18,
+    speed:2+level*0.6,
+    type
   });
 }
 
-function drawHeart(x, y, size) {
-  ctx.fillStyle = "red";
+function drawItem(i){
+  if(i.type==="heart") ctx.fillStyle="red";
+  else if(i.type==="gold") ctx.fillStyle="gold";
+  else ctx.fillStyle="black";
+
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.bezierCurveTo(x - size, y - size, x - size*2, y + size/2, x, y + size*2);
-  ctx.bezierCurveTo(x + size*2, y + size/2, x + size, y - size, x, y);
+  ctx.arc(i.x,i.y,i.size,0,Math.PI*2);
   ctx.fill();
 }
 
-function drawPlayer() {
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(player.x - player.width/2, player.y, player.width, player.height);
+function drawPlayer(){
+  ctx.fillStyle="#fff";
+  ctx.fillRect(player.x-player.width/2,player.y,player.width,player.height);
 }
 
-function updateHearts() {
-  for (let i = hearts.length - 1; i >= 0; i--) {
-    let h = hearts[i];
-    h.y += h.speed;
-
-    if (
-      h.y + h.size > player.y &&
-      h.x > player.x - player.width/2 &&
-      h.x < player.x + player.width/2
-    ) {
-      score++;
-      document.getElementById("score").innerText = "💖 " + score;
-
-      if (score > record) {
-        record = score;
-        document.getElementById("record").innerText = "🏆 " + record;
-        showMessage();
-        spawnFlowers();
-      }
-
-      hearts.splice(i,1);
-      continue;
-    }
-
-    if (h.y > canvas.height) {
-      misses++;
-      hearts.splice(i,1);
-    }
-  }
-}
-
-function drawHearts() {
-  hearts.forEach(h => drawHeart(h.x, h.y, h.size));
-}
-
-function spawnFlowers() {
-  for (let i = 0; i < 12; i++) {
-    flowers.push({
-      x: Math.random()*canvas.width,
-      y: canvas.height,
-      speed: 2
+/* PARTÍCULAS */
+function createParticles(x,y,color){
+  for(let i=0;i<10;i++){
+    particles.push({
+      x,y,
+      dx:(Math.random()-0.5)*4,
+      dy:(Math.random()-0.5)*4,
+      life:30,
+      color
     });
   }
 }
 
-function drawFlowers() {
-  ctx.fillStyle = "pink";
-  flowers.forEach(f => {
-    f.y -= f.speed;
-    ctx.beginPath();
-    ctx.arc(f.x, f.y, 5, 0, Math.PI*2);
-    ctx.fill();
+function drawParticles(){
+  particles.forEach(p=>{
+    p.x+=p.dx;
+    p.y+=p.dy;
+    p.life--;
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x,p.y,3,3);
   });
+  particles=particles.filter(p=>p.life>0);
 }
 
-function showMessage() {
-  const msg = document.getElementById("message");
-  msg.innerText = messages[Math.floor(Math.random()*messages.length)];
-  msg.style.opacity = 1;
-  setTimeout(()=> msg.style.opacity = 0, 2000);
+function updateItems(){
+  for(let i=items.length-1;i>=0;i--){
+    let it=items[i];
+    it.y+=it.speed;
+
+    if(it.y>player.y &&
+       it.x>player.x-player.width/2 &&
+       it.x<player.x+player.width/2){
+
+      if(it.type==="bomb"){
+        bombSound.play();
+        endGame();
+        return;
+      }
+
+      if(it.type==="gold"){
+        score+=3;
+        goldSound.play();
+        createParticles(it.x,it.y,"gold");
+      }else{
+        score++;
+        catchSound.play();
+        createParticles(it.x,it.y,"red");
+      }
+
+      updateLevel();
+      updateRecord();
+      items.splice(i,1);
+      continue;
+    }
+
+    if(it.y>canvas.height){
+      misses++;
+      items.splice(i,1);
+    }
+  }
+
+  document.getElementById("score").innerText="💖 "+score;
 }
 
-// CONTROL DE SPAWN INTELIGENTE
-function spawnLoop() {
-  createHeart();
+function updateLevel(){
+  if(score>=30) level=3;
+  else if(score>=15) level=2;
 
-  // aumenta dificultad poquito a poquito
-  if (spawnRate > 900) spawnRate -= 10;
-
-  setTimeout(spawnLoop, spawnRate);
+  document.getElementById("level").innerText="Nivel "+level;
+  spawnRate=1600-level*350;
 }
 
-function gameLoop() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  drawPlayer();
-  drawHearts();
-  drawFlowers();
-  updateHearts();
-
-  if (misses < 5) {
-    requestAnimationFrame(gameLoop);
-  } else {
-    alert("💔 Game Over\nPuntos: " + score);
-    location.reload();
+function updateRecord(){
+  if(score>record){
+    record=score;
+    localStorage.setItem("record",record);
+    document.getElementById("record").innerText="🏆 "+record;
+    showMessage("Nuevo récord 🔥");
   }
 }
 
-// CONTROLES SUAVES
-canvas.addEventListener("mousemove", e => {
-  player.x = e.clientX;
-});
+function showMessage(text){
+  const msg=document.getElementById("message");
+  msg.innerText=text;
+  msg.style.opacity=1;
+  setTimeout(()=>msg.style.opacity=0,2000);
+}
 
-canvas.addEventListener("touchmove", e => {
-  player.x = e.touches[0].clientX;
-});
+function spawnLoop(){
+  createItem();
+  setTimeout(spawnLoop,spawnRate);
+}
+
+function endGame(){
+  document.getElementById("gameOver").style.display="flex";
+  document.getElementById("finalScore").innerText="Puntos: "+score;
+}
+
+function gameLoop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  drawPlayer();
+  items.forEach(drawItem);
+  updateItems();
+  drawParticles();
+
+  if(misses<5){
+    requestAnimationFrame(gameLoop);
+  }else{
+    endGame();
+  }
+}
+
+canvas.addEventListener("mousemove",e=>player.x=e.clientX);
+canvas.addEventListener("touchmove",e=>player.x=e.touches[0].clientX);
 </script>
 
 </body>
