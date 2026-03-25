@@ -79,6 +79,7 @@ canvas{display:none;}
   <div id="score">0</div>
   <div id="record">0</div>
   <div id="level">Nivel 1</div>
+  <div id="misses">❌ 0</div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -90,23 +91,23 @@ const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
-// IMÁGENES
+// 🖼️ IMÁGENES
 const heartImg=new Image();
-heartImg.src="https://cdn-icons-png.flaticon.com/512/833/833472.png";
+heartImg.src="img/heart.png";
 
 const goldImg=new Image();
-goldImg.src="https://cdn-icons-png.flaticon.com/512/2583/2583344.png";
+goldImg.src="img/gold.png";
 
 const bombImg=new Image();
-bombImg.src="https://cdn-icons-png.flaticon.com/512/564/564619.png";
+bombImg.src="img/bomb.png";
 
-// SONIDOS
+// 🔊 SONIDOS
 let catchSound,goldSound,bombSound;
 
 function initSounds(){
-  catchSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
-  goldSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
-  bombSound=new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg");
+  catchSound=new Audio("sound/catch.mp3");
+  goldSound=new Audio("sound/gold.mp3");
+  bombSound=new Audio("sound/bomb.mp3");
 }
 
 let player={x:canvas.width/2,y:canvas.height-70,width:140,height:20};
@@ -116,6 +117,7 @@ let record=localStorage.getItem("record")||0;
 let level=1;
 let spawnRate=1600;
 let misses=0;
+let maxMisses=10;
 
 document.getElementById("record").innerText=record;
 
@@ -133,8 +135,13 @@ function createItem(){
   if(r>0.9) type="bomb";
   else if(r>0.75) type="gold";
 
+  // 💡 CAEN CERCA DEL JUGADOR
+  let range=200;
+  let x=player.x+(Math.random()*range-range/2);
+  x=Math.max(20,Math.min(canvas.width-20,x));
+
   items.push({
-    x:Math.random()*canvas.width,
+    x:x,
     y:-20,
     size:40,
     speed:2+level*0.5,
@@ -160,6 +167,7 @@ function updateItems(){
     let it=items[i];
     it.y+=it.speed;
 
+    // 🎯 COLISIÓN
     if(it.y>player.y &&
        it.x>player.x-player.width/2 &&
        it.x<player.x+player.width/2){
@@ -187,13 +195,17 @@ function updateItems(){
       continue;
     }
 
-    if(it.y>canvas.height){
-      misses++;
+    // ❌ FALLOS CORREGIDOS
+    if(it.y > canvas.height){
+      if(it.y > player.y + 50){
+        misses++;
+      }
       items.splice(i,1);
     }
   }
 
   document.getElementById("score").innerText=score;
+  document.getElementById("misses").innerText="❌ "+misses;
 }
 
 function updateLevel(){
@@ -224,7 +236,7 @@ function gameLoop(){
   items.forEach(drawItem);
   updateItems();
 
-  if(misses<5){
+  if(misses < maxMisses){
     requestAnimationFrame(gameLoop);
   }else{
     endGame();
@@ -236,6 +248,7 @@ function endGame(){
   document.getElementById("finalScore").innerText="Puntos: "+score;
 }
 
+// 🎮 CONTROLES
 canvas.addEventListener("mousemove",e=>player.x=e.clientX);
 canvas.addEventListener("touchmove",e=>player.x=e.touches[0].clientX);
 </script>
