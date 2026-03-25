@@ -60,7 +60,6 @@ canvas{display:none;}
 <div id="startScreen">
   <div class="card">
     <h2>Atrapa corazones</h2>
-    <p>Evita bombas 💣</p>
     <button onclick="startGame()">Jugar</button>
   </div>
 </div>
@@ -89,7 +88,7 @@ const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
-// 🖼️ IMÁGENES
+// IMÁGENES
 const heartImg=new Image();
 heartImg.src="img/heart.png";
 
@@ -99,7 +98,7 @@ goldImg.src="img/gold.png";
 const bombImg=new Image();
 bombImg.src="img/bomb.png";
 
-// 🔊 SONIDOS
+// SONIDOS
 let catchSound,goldSound,bombSound;
 
 function initSounds(){
@@ -109,32 +108,40 @@ function initSounds(){
 }
 
 // VARIABLES
-let player={x:canvas.width/2,y:canvas.height-70,width:140,height:20};
-let items=[];
-let score=0;
+let player;
+let items;
+let score;
 let record=localStorage.getItem("record")||0;
-let level=1;
-let spawnRate=1200;
-let misses=0;
+let level;
+let misses;
 let maxMisses=10;
 let spawnInterval;
-let gameOver=false;
+let animationId;
+let isGameRunning=false;
 
 document.getElementById("record").innerText=record;
 
 function startGame(){
   initSounds();
-  gameOver=false;
+
+  // RESET TOTAL
+  player={x:canvas.width/2,y:canvas.height-70,width:140,height:20};
+  items=[];
+  score=0;
+  level=1;
+  misses=0;
+  isGameRunning=true;
 
   document.getElementById("startScreen").style.display="none";
+  document.getElementById("gameOver").style.display="none";
   canvas.style.display="block";
 
-  spawnInterval=setInterval(createItem, spawnRate);
+  spawnInterval=setInterval(createItem,1200);
   gameLoop();
 }
 
 function createItem(){
-  if(gameOver) return;
+  if(!isGameRunning) return;
 
   let r=Math.random();
   let type="heart";
@@ -166,7 +173,7 @@ function drawPlayer(){
 }
 
 function updateItems(){
-  if(gameOver) return;
+  if(!isGameRunning) return;
 
   for(let i=items.length-1;i>=0;i--){
     let it=items[i];
@@ -225,7 +232,7 @@ function updateRecord(){
 }
 
 function gameLoop(){
-  if(gameOver) return;
+  if(!isGameRunning) return;
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -233,12 +240,21 @@ function gameLoop(){
   items.forEach(drawItem);
   updateItems();
 
-  requestAnimationFrame(gameLoop);
+  if(misses>=maxMisses){
+    endGame();
+    return;
+  }
+
+  animationId=requestAnimationFrame(gameLoop);
 }
 
 function endGame(){
-  gameOver=true;
+  isGameRunning=false;
+
   clearInterval(spawnInterval);
+  cancelAnimationFrame(animationId);
+
+  items=[]; // 🔥 limpia todo
 
   document.getElementById("gameOver").style.display="flex";
   document.getElementById("finalScore").innerText="Puntos: "+score;
