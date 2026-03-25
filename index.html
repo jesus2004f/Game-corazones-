@@ -28,8 +28,6 @@ body{
   padding:25px;
   border-radius:20px;
   text-align:center;
-  width:80%;
-  max-width:320px;
 }
 
 button{
@@ -62,7 +60,6 @@ canvas{display:none;}
 <div id="startScreen">
   <div class="card">
     <h2>Atrapa corazones</h2>
-    <p>Evita bombas 💣</p>
     <button onclick="startGame()">Jugar</button>
   </div>
 </div>
@@ -91,7 +88,7 @@ const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
-// 🖼️ IMÁGENES
+// IMÁGENES
 const heartImg=new Image();
 heartImg.src="img/heart.png";
 
@@ -101,7 +98,7 @@ goldImg.src="img/gold.png";
 const bombImg=new Image();
 bombImg.src="img/bomb.png";
 
-// 🔊 SONIDOS
+// SONIDOS
 let catchSound,goldSound,bombSound;
 
 function initSounds(){
@@ -110,12 +107,13 @@ function initSounds(){
   bombSound=new Audio("sound/bomb.mp3");
 }
 
+// VARIABLES
 let player={x:canvas.width/2,y:canvas.height-70,width:140,height:20};
 let items=[];
 let score=0;
 let record=localStorage.getItem("record")||0;
 let level=1;
-let spawnRate=1600;
+let spawnRate=1500;
 let misses=0;
 let maxMisses=10;
 
@@ -129,16 +127,15 @@ function startGame(){
   gameLoop();
 }
 
+// GENERAR OBJETOS
 function createItem(){
   let r=Math.random();
   let type="heart";
   if(r>0.9) type="bomb";
   else if(r>0.75) type="gold";
 
-  // 💡 CAEN CERCA DEL JUGADOR
-  let range=200;
-  let x=player.x+(Math.random()*range-range/2);
-  x=Math.max(20,Math.min(canvas.width-20,x));
+  // POSICIÓN SEGURA
+  let x = Math.random() * (canvas.width - 40) + 20;
 
   items.push({
     x:x,
@@ -167,7 +164,6 @@ function updateItems(){
     let it=items[i];
     it.y+=it.speed;
 
-    // 🎯 COLISIÓN
     if(it.y>player.y &&
        it.x>player.x-player.width/2 &&
        it.x<player.x+player.width/2){
@@ -195,11 +191,8 @@ function updateItems(){
       continue;
     }
 
-    // ❌ FALLOS CORREGIDOS
     if(it.y > canvas.height){
-      if(it.y > player.y + 50){
-        misses++;
-      }
+      misses++;
       items.splice(i,1);
     }
   }
@@ -213,7 +206,7 @@ function updateLevel(){
   else if(score>=15) level=2;
 
   document.getElementById("level").innerText="Nivel "+level;
-  spawnRate=1600-level*300;
+  spawnRate=1500-level*300;
 }
 
 function updateRecord(){
@@ -224,9 +217,10 @@ function updateRecord(){
   }
 }
 
+// LOOP SPAWN CORREGIDO
 function spawnLoop(){
   createItem();
-  setTimeout(spawnLoop,spawnRate);
+  setTimeout(spawnLoop, spawnRate);
 }
 
 function gameLoop(){
@@ -248,9 +242,16 @@ function endGame(){
   document.getElementById("finalScore").innerText="Puntos: "+score;
 }
 
-// 🎮 CONTROLES
-canvas.addEventListener("mousemove",e=>player.x=e.clientX);
-canvas.addEventListener("touchmove",e=>player.x=e.touches[0].clientX);
+// CONTROLES (ARREGLADOS)
+canvas.addEventListener("mousemove",e=>{
+  player.x = e.clientX;
+});
+
+canvas.addEventListener("touchmove",e=>{
+  e.preventDefault();
+  player.x = e.touches[0].clientX;
+},{passive:false});
+
 </script>
 
 </body>
