@@ -60,6 +60,7 @@ canvas{display:none;}
 <div id="startScreen">
   <div class="card">
     <h2>Atrapa corazones</h2>
+    <p>Evita bombas 💣</p>
     <button onclick="startGame()">Jugar</button>
   </div>
 </div>
@@ -88,7 +89,7 @@ const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
-// IMÁGENES
+// 🖼️ IMÁGENES
 const heartImg=new Image();
 heartImg.src="img/heart.png";
 
@@ -98,7 +99,7 @@ goldImg.src="img/gold.png";
 const bombImg=new Image();
 bombImg.src="img/bomb.png";
 
-// SONIDOS
+// 🔊 SONIDOS
 let catchSound,goldSound,bombSound;
 
 function initSounds(){
@@ -113,29 +114,34 @@ let items=[];
 let score=0;
 let record=localStorage.getItem("record")||0;
 let level=1;
-let spawnRate=1500;
+let spawnRate=1200;
 let misses=0;
 let maxMisses=10;
+let spawnInterval;
+let gameOver=false;
 
 document.getElementById("record").innerText=record;
 
 function startGame(){
   initSounds();
+  gameOver=false;
+
   document.getElementById("startScreen").style.display="none";
   canvas.style.display="block";
-  spawnLoop();
+
+  spawnInterval=setInterval(createItem, spawnRate);
   gameLoop();
 }
 
-// GENERAR OBJETOS
 function createItem(){
+  if(gameOver) return;
+
   let r=Math.random();
   let type="heart";
   if(r>0.9) type="bomb";
   else if(r>0.75) type="gold";
 
-  // POSICIÓN SEGURA
-  let x = Math.random() * (canvas.width - 40) + 20;
+  let x=Math.random()*(canvas.width-40)+20;
 
   items.push({
     x:x,
@@ -160,6 +166,8 @@ function drawPlayer(){
 }
 
 function updateItems(){
+  if(gameOver) return;
+
   for(let i=items.length-1;i>=0;i--){
     let it=items[i];
     it.y+=it.speed;
@@ -191,7 +199,7 @@ function updateItems(){
       continue;
     }
 
-    if(it.y > canvas.height){
+    if(it.y>canvas.height){
       misses++;
       items.splice(i,1);
     }
@@ -206,7 +214,6 @@ function updateLevel(){
   else if(score>=15) level=2;
 
   document.getElementById("level").innerText="Nivel "+level;
-  spawnRate=1500-level*300;
 }
 
 function updateRecord(){
@@ -217,41 +224,35 @@ function updateRecord(){
   }
 }
 
-// LOOP SPAWN CORREGIDO
-function spawnLoop(){
-  createItem();
-  setTimeout(spawnLoop, spawnRate);
-}
-
 function gameLoop(){
+  if(gameOver) return;
+
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   drawPlayer();
   items.forEach(drawItem);
   updateItems();
 
-  if(misses < maxMisses){
-    requestAnimationFrame(gameLoop);
-  }else{
-    endGame();
-  }
+  requestAnimationFrame(gameLoop);
 }
 
 function endGame(){
+  gameOver=true;
+  clearInterval(spawnInterval);
+
   document.getElementById("gameOver").style.display="flex";
   document.getElementById("finalScore").innerText="Puntos: "+score;
 }
 
-// CONTROLES (ARREGLADOS)
+// CONTROLES
 canvas.addEventListener("mousemove",e=>{
-  player.x = e.clientX;
+  player.x=e.clientX;
 });
 
 canvas.addEventListener("touchmove",e=>{
   e.preventDefault();
-  player.x = e.touches[0].clientX;
+  player.x=e.touches[0].clientX;
 },{passive:false});
-
 </script>
 
 </body>
